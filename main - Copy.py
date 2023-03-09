@@ -8,7 +8,7 @@ import nltk
 from matplotlib import pyplot as plt
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.sentiment.util import *
-#from nltk.tokenize import word_tokenize
+from nltk.tokenize import word_tokenize
 from nltk import word_tokenize
 import plotly.express as pp
 import re
@@ -20,7 +20,7 @@ from htbuilder import HtmlElement, div, br, hr, a, p, img, styles
 from htbuilder.units import percent,px
 nltk.download('punkt')
 
-
+hashtag = ''
 
 def image(src_as_string, **style):
     return img(src=src_as_string, style=styles(**style))
@@ -79,25 +79,26 @@ def snscrap_function(options_ticker,Limit,Since,Until):
     hashtags = options_ticker
     tweets = list()
     if Since == None and Until == None:
-        for n,k in enumerate(hashtags):
-            for i, tweet in enumerate(sntwitter.TwitterSearchScraper(k).get_items()):
-                if int(Limit) != 0 :
-                    if i > int(Limit):
-                        break
-                tweets.append([k,tweet.date,tweet.id,tweet.content])
+        #for n,k in (hashtags):
+        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(hashtags).get_items()):
+            if int(Limit) != 0 :
+                if i > int(Limit):
+                    break
+            tweets.append([hashtags,tweet.date,tweet.id,tweet.content])
         tweets_df = pd.DataFrame(tweets,columns=['Hashtag','date','Tweet Id','tweet'])
     elif Since != None and Since != None :
         Since , Until = str(Since) , str(Until)
-        for n,k in enumerate(hashtags):
-            for i, tweet in enumerate(sntwitter.TwitterSearchScraper(f'{k} since:{Since} until:{Until} lang:en' ).get_items()):
-                if int(Limit) != 0 :
-                    if i > int(Limit):
-                        break
-                tweets.append([k,tweet.date,tweet.id,tweet.content])
+        #for n,k in (hashtags):
+        for i, tweet in enumerate(sntwitter.TwitterSearchScraper(f'{hashtags} since:{Since} until:{Until} lang:en' ).get_items()):
+            if int(Limit) != 0 :
+                if i > int(Limit):
+                    break
+            tweets.append([hashtags,tweet.date,tweet.id,tweet.content])
         tweets_df = pd.DataFrame(tweets,columns=['Hashtag','date','Tweet Id','tweet'])
     return tweets_df
 
 def scrapData():
+    ans = ''
     op=st.checkbox('Add more options for search')
     ListSearch=['#RVCE','#Chatgpt']
     options_ticker=list()
@@ -105,7 +106,8 @@ def scrapData():
         with st.form('Scraping section'):
             col1,col2,col3,col4=st.columns((2,0.5,2,2))
             with col1:
-                options_ticker=st.multiselect(label="Select hashtags",options=ListSearch)
+                options_ticker=st.text_input(label='enter hashtag')
+                ans = options_ticker
             submitted=st.form_submit_button("Scrap")
         if submitted:
             st.spinner('Wait loading data in progress ...')
@@ -114,6 +116,7 @@ def scrapData():
                 st.write(df)
                 st.success(str(df.shape[0])+',tweets successfully loaded!')
                 downloadData(df)
+                return ans
 
     else:
         Since,Until,Limit = None,None,0
@@ -121,7 +124,8 @@ def scrapData():
         options_details=st.multiselect(label="Select hashtags",options=list_details)
         with st.form('Scraping section'):
                 col1,col2,col3,col4=st.columns((1.5,0.8,2,2))
-                options_ticker=col1.multiselect(label="Select hashtags",options=ListSearch)
+                options_ticker=col1.text_input(label='enter hashtag')
+                ans = options_ticker
                 if 'Limit'in options_details:
                     Limit=col2.text_input(label='Limit')
                 if 'period'in options_details:
@@ -137,6 +141,7 @@ def scrapData():
                         st.write(df1)
                         st.success(str(df1.shape[0])+' ,tweets successfully loaded!')
                         downloadData(df1)
+                        return ans
 def Analyzer(df):
     SIA = SentimentIntensityAnalyzer()
     df['clean_tweet']=df["clean_tweet"].astype(str)
@@ -206,7 +211,7 @@ if __name__ == '__main__':
         col1.write("We are interested in this work of opinion based on Twitter tweets. This process begins with the collection of tweets using snscrap followed by a pre-processing phase of the text in order to extract frequent words. Then categorize them into three groups, namely positive sentiments, negative sentiments and neutral sentiments.")
         col2.image("images/logo.png",use_column_width=True)
     elif menu_id =="Data Scraping":
-        scrapData()
+        hashtag = scrapData()
     elif menu_id =="Sent Analysis":
         df= upload_file()
         if df is not None:
@@ -254,17 +259,17 @@ if __name__ == '__main__':
         tweets=df.groupby(['Hashtag','Sentiment']).size().reset_index(name='Counts')
         listSearch= ['#RVCE','#Chatgpt']
         
-        opt_tick=__2.selectbox("",options=listSearch)
+        hashtag=__2.text_input(label='enter hashtag')
         
         #Plotly
         
-        df  = tweets[tweets['Hashtag']== opt_tick]
+        df  = tweets[tweets['Hashtag']== hashtag]
         fig = pp.bar(df,x="Hashtag",y='Counts',color='Sentiment',text="Sentiment",color_discrete_sequence=["#DEB887", "#F5DEB3", "#C8AD7F"],)
         c11,c22=st.columns((3,2))
         c22.markdown('<br><br>',unsafe_allow_html=True)
         tweets = tweets[['Hashtag','Sentiment','Counts']]
-        c22.table(tweets[tweets['Hashtag']== '#RVCE'])
-        c22.table(tweets[tweets['Hashtag']== '#Chatgpt'])
+        c22.table(tweets[tweets['Hashtag']== hashtag])
+        #c22.table(tweets[tweets['Hashtag']== '#Chatgpt'])
         c11.plotly_chart(fig,use_container_width=True)
         
         #WordCounts
@@ -281,7 +286,7 @@ if __name__ == '__main__':
             st.pyplot() 
             
             #st.subheader("Conclusion")
-            #st.write("We find that most Moroccans during the coronavirus period have positive feelings. The reason for this may be due to the measures taken by the Moroccan government to curb this epidemic.")
+            #st.write(".")
             
     
             
